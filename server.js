@@ -7,6 +7,7 @@ const rateLimit = require("express-rate-limit");
 const archiver = require("archiver");
 const auth = require("./middleware/auth");
 const authRoutes = require("./routes/auth");
+const defaultWords = require("./glossary");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -77,6 +78,21 @@ app.post("/upload", auth, upload.array("images", 100), async (req, res) => {
     console.error("Error processing images:", error);
     res.status(500).json({ error: "Error processing images" });
   }
+});
+
+app.post("/process-article", (req, res) => {
+  const { text, customWords } = req.body;
+  const wordsToHighlight = customWords.length ? customWords : defaultWords;
+
+  const highlightedText = wordsToHighlight.reduce((acc, word) => {
+    const regex = new RegExp(`\\b(${word})\\b`, "gi");
+    return acc.replace(
+      regex,
+      `<span style="color: red; font-weight: bold;">$1</span>`
+    );
+  }, text);
+
+  res.json({ highlightedText });
 });
 
 app.listen(port, () => {
